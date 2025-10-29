@@ -1,10 +1,11 @@
 import java.util.*;
 
-public class partB_Kerem {
+public class Main {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        while (true) { // ana menü sürekli dönsün
-            System.out.println("\n=== MAIN MENU ===");
+        while (true) { 
+            clearScreen();
+            System.out.println("\n MAIN MENU ");
             System.out.println("[A] Primary School");
             System.out.println("[B] Secondary School");
             System.out.println("[C] High School");
@@ -17,15 +18,19 @@ public class partB_Kerem {
                 System.out.println("Bye!");
                 break;
             } 
-            else if (c.equals("B")) { // B -> bizim görev
+            else if (c.equals("B")) { 
                 optionB(in);
             } 
+            else { 
+                System.out.println("Warning: Only Option B is available. Try again.");
+                pause(in);
+            }
         }
     }
 
-    // ===== OPTION B =====
     static void optionB(Scanner in) {
         while (true) {
+            clearScreen();
             System.out.println("\n=== SECONDARY SCHOOL ===");
             System.out.println("[1] Prime Numbers");
             System.out.println("[2] Step-by-step Evaluation");
@@ -36,27 +41,40 @@ public class partB_Kerem {
             if (c.equals("1")) primes(in);
             else if (c.equals("2")) evaluate(in);
             else if (c.equals("3")) break;
-            else System.out.println("Invalid. Try again.");
+            else {
+                System.out.println("Invalid. Try again.");
+                pause(in);
+            }
         }
     }
-
-    // ===== PRIME NUMBERS =====
     static void primes(Scanner in) {
-        System.out.print("Enter n (>=12): ");
-        int n = in.nextInt();
-        in.nextLine();
+        int n;
 
-        // Sieve of Eratosthenes
+        while (true) { 
+            System.out.print("Enter n (>=12): ");
+            if (!in.hasNextInt()) {
+                System.out.println("Invalid input. Please enter an integer >= 12.");
+                in.nextLine(); 
+                continue; 
+            }
+
+            n = in.nextInt();
+            in.nextLine(); 
+            if (n < 12) {
+                System.out.println("Invalid input. Please enter an integer >= 12.");
+                continue; 
+            }
+            break;
+        }
+
         long t1 = System.nanoTime();
         ArrayList<Integer> e = sieveEratosthenes(n);
         long t2 = System.nanoTime();
 
-        // Sieve of Sundaram
         long t3 = System.nanoTime();
         ArrayList<Integer> s = sieveSundaram(n);
         long t4 = System.nanoTime();
 
-        // Sieve of Atkin
         long t5 = System.nanoTime();
         ArrayList<Integer> a = sieveAtkin(n);
         long t6 = System.nanoTime();
@@ -64,6 +82,7 @@ public class partB_Kerem {
         printResult("Sieve of Eratosthenes", e, t2 - t1);
         printResult("Sieve of Sundaram", s, t4 - t3);
         printResult("Sieve of Atkin", a, t6 - t5);
+        pause(in);
     }
 
     static void printResult(String name, ArrayList<Integer> primes, long time) {
@@ -72,7 +91,7 @@ public class partB_Kerem {
             System.out.println("No primes."); 
             return; 
         }
-        // First 3 and Last 2
+
         System.out.print("First 3: ");
         for (int i = 0; i < 3 && i < primes.size(); i++) 
             System.out.print(primes.get(i) + " ");
@@ -83,7 +102,6 @@ public class partB_Kerem {
         System.out.printf("Time: %.3f ms\n", time / 1_000_000.0);
     }
 
-    // ========== Sieve of Eratosthenes ==========
     static ArrayList<Integer> sieveEratosthenes(int n) {
         boolean[] mark = new boolean[n+1];
         for (int i = 2; i*i <= n; i++) {
@@ -98,7 +116,6 @@ public class partB_Kerem {
         return primes;
     }
 
-    // ========== Sieve of Sundaram ==========
     static ArrayList<Integer> sieveSundaram(int n) {
         int m = (n - 2) / 2;
         boolean[] rem = new boolean[m+1];
@@ -115,7 +132,6 @@ public class partB_Kerem {
         return primes;
     }
 
-    // ========== Sieve of Atkin ==========
     static ArrayList<Integer> sieveAtkin(int n) {
         boolean[] prime = new boolean[n + 1];
         int limit = (int)Math.sqrt(n);
@@ -144,7 +160,6 @@ public class partB_Kerem {
         return list;
     }
 
-    // ===== STEP-BY-STEP EVALUATION (simplest) =====
     static void evaluate(Scanner in) {
         System.out.println("Valid: digits and +, -, x, :, (, )  Example: -3+(5:(1+1))x(-2-4)");
         while (true) {
@@ -152,21 +167,21 @@ public class partB_Kerem {
             String s = in.nextLine();
             if (s.trim().isEmpty()) return;
 
-            // normalize
             s = s.replace('×','x').replace('*','x').replace('/',':').replace(" ", "");
 
-            // print each single-step reduction until stable
-            String cur = s;
-            while (true) {
-                String next = reduceOnce(cur);
-                System.out.println("= " + next);
-                if (next.equals(cur)) break;
-                cur = next;
-            }
+            evalRecursive(s);
+            pause(in);
         }
     }
+    static void evalRecursive(String cur) {
+        String next = reduceOnce(cur);
+        if (next.equals(cur)) {
+            return;
+        }
+        System.out.println("= " + next); 
+        evalRecursive(next);             
+    }
 
-    // one reduction step: first innermost ( ... ), then x/:, then +/-
     static String reduceOnce(String s) {
         int close = s.indexOf(')');
         if (close != -1) {
@@ -180,12 +195,11 @@ public class partB_Kerem {
         return reduceOnceNoParen(s);
     }
 
-    // reduce a single op in a no-parenthesis string
     static String reduceOnceNoParen(String s) {
         if (isInt(s)) return s;
 
-        int idx = firstOfTwo(s, 'x', ':');           // priority: x and :
-        if (idx == -1) idx = firstPlusMinus(s);      // then + and -
+        int idx = firstOfTwo(s, 'x', ':');        
+        if (idx == -1) idx = firstPlusMinus(s);      
         if (idx == -1) return s;
 
         int L = leftNumStart(s, idx - 1);
@@ -198,15 +212,11 @@ public class partB_Kerem {
 
         long V;
         if (op == 'x') V = A * B;
-        else if (op == ':') V = A / B;       // integer division (5:2 -> 2)
+        else if (op == ':') V = A / B; 
         else if (op == '+') V = A + B;
         else V = A - B;
-
         return s.substring(0, L) + V + s.substring(R + 1);
     }
-
-    // helpers kept very small and simple
-
     static boolean isInt(String s) {
         if (s.length() == 0) return false;
         int i = 0;
@@ -214,7 +224,6 @@ public class partB_Kerem {
         for (; i < s.length(); i++) if (!Character.isDigit(s.charAt(i))) return false;
         return true;
     }
-
     static int firstOfTwo(String s, char a, char b) {
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
@@ -222,24 +231,21 @@ public class partB_Kerem {
         }
         return -1;
     }
-
     static int firstPlusMinus(String s) {
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (c == '+' || c == '-') {
-                if (i == 0) continue;                      // unary at start
+                if (i == 0) continue;               
                 char p = s.charAt(i - 1);
-                if (p == '(' || p == '+' || p == '-' || p == 'x' || p == ':') continue; // unary after op or '('
+                if (p == '(' || p == '+' || p == '-' || p == 'x' || p == ':') continue;
                 return i;
             }
         }
         return -1;
     }
-
     static int leftNumStart(String s, int i) {
         int j = i;
         while (j >= 0 && Character.isDigit(s.charAt(j))) j--;
-        // include unary '-'
         if (j >= 0 && s.charAt(j) == '-') {
             if (j == 0) j--;
             else {
@@ -252,7 +258,6 @@ public class partB_Kerem {
 
     static int rightNumEnd(String s, int i) {
         int j = i;
-        // allow unary '-' on right
         if (j < s.length() && s.charAt(j) == '-') {
             if (j == 0) j++;
             else {
@@ -263,6 +268,11 @@ public class partB_Kerem {
         while (j < s.length() && Character.isDigit(s.charAt(j))) j++;
         return j - 1;
     }
-}
-    
+    static void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
+    }
 
+    static void pause(Scanner in) {
+    }
+}
